@@ -1,4 +1,4 @@
-import {cities,findCity,money,dateISO,addDays,estimate,encodeTrip,decodeTrip} from './planner.mjs';
+import {cities,findCity,money,dateISO,addDays,estimate,encodeTrip,decodeTrip} from './planner.mjs?v=3';
 const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tierLabel={save:'精打细算',balanced:'均衡安排',comfort:'舒适优先'};
 const categories=[['transport','往返大交通','#2f6552'],['hotel','住宿','#81a78a'],['food','餐饮','#b3bf8a'],['local','当地交通','#d6c99e'],['play','游玩','#d39c74'],['extra','其他费用','#b3a9ba'],['reserve','预留金 10%','#dce2d5']];
@@ -11,7 +11,7 @@ function budgetHint(){const p=Number($('#people').value),b=Number($('#budget').v
 budgetHint();
 function toast(s){$('#toast').textContent=s;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),3200)}
 function populate(input){input={budgetUnit:'total',roomMode:'twin',fare:'',hotelRate:'',extra:'',...input};for(const [key,v]of Object.entries(input)){const el=document.getElementById(key);if(el)el.value=v??'';}budgetHint();}
-function generate(input,modeId,scroll=true){try{current=estimate(input,modeId);selectedMode=current.chosen.id;$('#form-error').hidden=true;render();if(scroll)$('#results').scrollIntoView({behavior:'smooth',block:'start'});return true}catch(e){$('#form-error').textContent=e.message;$('#form-error').hidden=false;$('#form-error').scrollIntoView({behavior:'smooth',block:'center'});return false}}
+function generate(input,modeId,scroll=true){try{current=estimate(input,modeId);selectedMode=current.chosen.id;$('#form-error').hidden=true;render();renderDestinationRoute(current.b,current.input.days,current.input.date);if(scroll)$('#route-results').scrollIntoView({behavior:'smooth',block:'start'});return true}catch(e){$('#form-error').textContent=e.message;$('#form-error').hidden=false;$('#form-error').scrollIntoView({behavior:'smooth',block:'center'});return false}}
 $('#trip-form').addEventListener('submit',e=>{e.preventDefault();generate(values(),selectedMode)});
 $('#swap').addEventListener('click',()=>{const from=$('#from').value;$('#from').value=$('#to').value;$('#to').value=from;$('#from').focus()});
 $('#trip-form').addEventListener('input',e=>{if(['from','to','date','days','people'].includes(e.target.id)){selectedMode=undefined;$('#fare').value='';}if(e.target.id==='to')$('#hotelRate').value='';if(current){$('#results').hidden=true;current=null;}$('#form-error').hidden=true;budgetHint();});
@@ -43,3 +43,23 @@ $('#copy-share').addEventListener('click',async()=>{try{await navigator.clipboar
 function restoreShared(){try{const shared=decodeTrip(location.hash);if(!shared)return;populate(shared.input);selectedMode=shared.mode;if(shared.input.date<dateISO(new Date())){toast('分享行程的日期已过，请更新日期后规划。');$('#planner').scrollIntoView();}else generate(shared.input,shared.mode);}catch(e){$('#form-error').textContent=e.message;$('#form-error').hidden=false;}}
 restoreShared();
 window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#trip='))restoreShared()});
+
+function renderDestinationRoute(city,days,date){
+ const target=$('#route-results');
+ const routes=Array.from({length:days},(_,i)=>{
+  if(i===0)return {title:'抵达与城市初见',stops:['抵达'+city.name,'办理入住',city.arrival],note:'根据抵达时间安排，晚到时优先休息。'};
+  if(i===days-1)return {title:'轻松收尾与返程',stops:['酒店周边早餐','退房与行李整理','前往机场或车站'],note:'根据实际车次或航班预留接驳时间，当天不安排远距离景点。'};
+  const area=city.areas[i-1];
+  return area?{title:'探索'+city.name+' · 第'+i+'个片区',stops:[area[0],'当地午餐',area[1]],note:'上午安排第一处景点，午餐后前往第二处；晚上在住宿附近用餐、休息。景点开放与预约请出发前核实。'}:{title:'自由探索与休息',stops:['周边街区散步','自选博物馆或公园','当地美食'],note:'精选片区已安排完毕，本日留作休息或补游。自选项目需自行确认位置及费用。'};
+ });
+ target.innerHTML='<div class="panel route-panel"><span class="step-label">YOUR DESTINATION ROUTE</span><h2>'+esc(city.name)+' · '+days+' 天旅游路线</h2><p class="muted">目的地游玩草案，包含抵达和返程日；长途飞行或时差可能需要额外交通日。此路线不依赖预算填写。</p><div class="timeline">'+routes.map((d,i)=>'<article class="day"><span class="day-label">DAY '+(i+1)+' · '+esc(addDays(date,i))+'</span><h4>'+esc(d.title)+'</h4><div class="stops">'+d.stops.map(s=>'<span class="stop">'+esc(s)+'</span>').join('<span class="stop-arrow">→</span>')+'</div><p>'+esc(d.note)+'</p></article>').join('')+'</div><p class="footnote">精选片区模板，非实时导航；如需交通和费用分配，请点击上方“规划我的旅程”。</p></div>';
+ target.hidden=false;
+}
+$('#generate-route').addEventListener('click',()=>{
+ const city=findCity($('#to').value),days=Number($('#days').value);
+ if(!city){$('#form-error').textContent='请选择支持的目的地：'+cities.map(c=>c.name).join('、');$('#form-error').hidden=false;$('#to').focus();return;}
+ if(!Number.isInteger(days)||days<2||days>14)return;
+ const raw=$('#date').value,date=/^\d{4}-\d{2}-\d{2}$/.test(raw)&&Number.isFinite(new Date(raw+'T12:00:00').getTime())?raw:dateISO(new Date());
+ $('#form-error').hidden=true;renderDestinationRoute(city,days,date);$('#route-results').scrollIntoView({behavior:'smooth',block:'start'});$('#route-results').focus({preventScroll:true});toast('已生成'+city.name+'的'+days+'天旅游路线');
+});
+$('#trip-form').addEventListener('input',()=>{$('#route-results').hidden=true;});
