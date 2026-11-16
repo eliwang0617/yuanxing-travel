@@ -1,0 +1,24 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {cities,estimate,addDays,dateISO,encodeTrip,decodeTrip} from './planner.mjs';
+const input={from:'上海',to:'东京',date:addDays(dateISO(new Date()),14),days:5,people:2,budget:15000,style:'auto'};
+test('Every supported city pair produces finite costs and an itinerary with conserved totals',()=>{
+ for(const a of cities)for(const b of cities){if(a===b)continue;const r=estimate({...input,from:a.name,to:b.name,days:7});
+ assert.equal(r.plan.length,7);assert.equal(r.plan.at(-1).date,addDays(input.date,6));
+ assert.equal(r.c.total,['transport','hotel','food','local','play','extra','reserve'].reduce((s,k)=>s+r.c[k],0));
+ assert.ok(Number.isFinite(r.c.total)&&r.c.total>0);assert.equal(r.input.budget-r.c.total,r.gap);
+ for(const m of r.modes){assert.ok(m.low<=m.total&&m.total<=m.high);assert.ok(Number.isFinite(m.hours)&&m.hours>0)}
+ if(a.country!==b.country)assert.ok(r.modes.every(m=>m.id==='flight'));
+ }
+});
+test('Budget shortage is reported and never forces fictitious affordable prices',()=>{const r=estimate({...input,budget:100});assert.ok(r.gap<0);assert.equal(r.tier,'save');assert.ok(r.minimum>100)});
+test('Party costs use rooms rounded up and transport choice is retained',()=>{const r=estimate({...input,from:'上海',to:'杭州',people:3,style:'save'},'drive');assert.equal(r.rooms,2);assert.equal(r.chosen.id,'drive');const s=estimate({...input,from:'上海',to:'杭州',people:5,style:'save'},'drive');assert.equal(s.chosen.total,r.chosen.total*2)});
+test('Invalid cities, identical cities, stale dates and invalid values are rejected',()=>{for(const patch of [{to:'火星'},{to:'上海'},{date:'2020-01-01'},{date:'2030-02-30'},{days:1},{days:15},{people:0},{people:1.5},{budget:NaN},{budget:99},{style:'other'}])assert.throws(()=>estimate({...input,...patch}))});
+test('Long-haul time is reserved and short trips rejected',()=>{assert.throws(()=>estimate({...input,to:'巴黎',days:4}));const r=estimate({...input,to:'巴黎',days:7});assert.equal(r.plan[1].kind,'travel');assert.equal(r.plan.at(-1).kind,'travel')});
+test('Long itineraries explicitly leave flexible days, without duplicate invented sights',()=>{const r=estimate({...input,days:14});assert.equal(r.plan.length,14);assert.equal(r.plan.filter(d=>d.kind==='visit').length,4);assert.equal(r.plan.filter(d=>d.kind==='flex').length,8)});
+test('Weekend dates change the disclosed model while weekday count remains stable',()=>{let d=input.date;while(new Date(d+'T12:00:00').getDay()!==1)d=addDays(d,1);const weekday=estimate({...input,date:d,days:2});const weekend=estimate({...input,date:addDays(d,4),days:2});assert.ok(weekend.chosen.total>weekday.chosen.total);assert.ok(weekend.c.hotel>weekday.c.hotel)});
+test('Per-person budget equals the corresponding party total',()=>{const a=estimate({...input,budget:7500,budgetUnit:'person'}),b=estimate(input);assert.equal(a.totalBudget,15000);assert.equal(a.gap,b.gap);assert.equal(a.tier,b.tier)});
+test('Quoted transport and hotel override models and reserve includes extra costs',()=>{const r=estimate({...input,fare:3000,hotelRate:500,extra:1000,people:3,roomMode:'single'});assert.equal(r.c.transport,3000);assert.equal(r.c.hotel,500*3*4);assert.equal(r.rooms,3);assert.equal(r.c.extra,1000);const subtotal=r.c.transport+r.c.hotel+r.c.food+r.c.local+r.c.play+r.c.extra;assert.equal(r.c.reserve,Math.ceil(subtotal*.1));assert.equal(r.c.total,subtotal+r.c.reserve);assert.ok(r.cautiousTotal>=r.c.total)});
+test('Zero cost is a valid explicit quote; negative and nonnumeric quotes are rejected',()=>{const r=estimate({...input,fare:0,hotelRate:0,extra:0});assert.equal(r.c.transport,0);assert.equal(r.c.hotel,0);for(const patch of [{fare:-1},{hotelRate:'500'},{extra:NaN},{fare:Infinity},{roomMode:'bad'},{budgetUnit:'bad'}])assert.throws(()=>estimate({...input,...patch}))});
+test('Share links round-trip all public inputs and ignore undeclared properties',()=>{const original={...input,budgetUnit:'person',roomMode:'single',fare:2500,hotelRate:400,extra:400,secret:'never-share'};const hash=encodeTrip(original,'flight');assert.ok(!hash.includes('secret'));const shared=decodeTrip(hash);const {secret,...safe}=original;assert.deepEqual(shared.input,safe);assert.equal(shared.mode,'flight');assert.equal(estimate(shared.input,shared.mode).c.total,estimate(original,'flight').c.total)});
+test('Corrupt share links are rejected and old dates can be recovered for editing',()=>{assert.equal(decodeTrip('#planner'),null);assert.throws(()=>decodeTrip('#trip=%7B'));assert.throws(()=>decodeTrip('#trip='+encodeURIComponent(JSON.stringify({v:2,input:{...input,people:'2'}}))));assert.throws(()=>decodeTrip('#trip='+ 'x'.repeat(6100)));assert.equal(decodeTrip(encodeTrip({...input,date:'2020-01-01'},'flight')).input.date,'2020-01-01')});
