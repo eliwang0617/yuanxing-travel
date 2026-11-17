@@ -20,6 +20,12 @@ export const cities = [
  city('巴黎','PARIS','法国',48.86,2.35,1000,260,80,180,'酒店周边街区','埃菲尔铁塔周边 / 塞纳河|卢浮宫 / 杜乐丽花园|蒙马特 / 圣心堂|西岱岛 / 拉丁区','https://parisjetaime.com/eng/article/the-essentials-a264'),
  city('伦敦','LONDON','英国',51.51,-0.13,1100,260,100,160,'酒店周边街区','威斯敏斯特 / 南岸|大英博物馆 / 考文特花园|海德公园 / 南肯辛顿|卡姆登 / 摄政公园','https://www.visitlondon.com/things-to-do/london-areas/south-bank'),
  city('悉尼','SYDNEY','澳大利亚',-33.87,151.21,950,240,80,140,'酒店周边街区','环形码头 / 悉尼歌剧院周边|岩石区 / 皇家植物园|邦迪海滩 / 海岸步道|达令港 / 海德公园','https://www.sydney.com/'),
+ city("香港","HONG KONG","中国",22.32,114.17,800,180,65,120,"尖沙咀海滨","星光大道 / 尖沙咀海滨","https://www.discoverhongkong.com/eng/place-to-go/travel.guide-avenue-of-stars.html"),
+ city("京都","KYOTO","日本",35.01,135.77,650,170,65,100,"京都站周边","伏见稻荷大社 / 稻荷参道|岚山竹林 / 岚山街区","https://www.japan.travel/en/spot/ma_129/"),
+ city("吉隆坡","KUALA LUMPUR","马来西亚",3.14,101.69,300,100,45,80,"KLCC周边","KLCC公园 / 双子塔外观","https://www.suriaklcc.com.my/attractions/klcc-park/"),
+ city("罗马","ROME","意大利",41.9,12.5,850,220,65,150,"住宿周边","纳沃纳广场 / 历史中心|西班牙台阶 / 西班牙广场","https://www.turismoroma.it/en/itineraries/rome-four-days-four-faces-eternal-city"),
+ city("纽约","NEW YORK","美国",40.71,-74.01,1500,300,100,180,"住宿周边","中央公园 / 公园步道|时代广场 / 百老汇街区","https://www.centralparknyc.org/visit"),
+ city("墨尔本","MELBOURNE","澳大利亚",-37.81,144.96,850,220,75,120,"住宿周边","联邦广场 / 亚拉河畔|皇家植物园 / 园林步道","https://www.visitmelbourne.com/regions/Melbourne/see-and-do/art-and-culture/Architecture-and-design/Federation-Square"),
 ];
 export const findCity = name => cities.find(c=>c.name===name.trim()||c.en.toLowerCase()===name.trim().toLowerCase());
 export const money = n => '¥'+Math.round(n).toLocaleString('zh-CN');
@@ -29,7 +35,7 @@ const round = n=>Math.round(n/10)*10;
 export function distance(a,b){const r=Math.PI/180;const x=Math.sin((b.lat-a.lat)*r/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lon-a.lon)*r/2)**2;return 6371*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 export function validate(input,today=dateISO(new Date())){
  const a=findCity(input.from||''),b=findCity(input.to||'');
- if(!a||!b)throw Error('请从城市列表中选择出发地和目的地，目前支持 18 座城市。');
+ if(!a||!b)throw Error('请从城市列表中选择出发地和目的地，目前支持 24 座城市。');
  if(a===b)throw Error('出发地和目的地不能相同，请换一个目的地。');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(input.date)||!Number.isFinite(new Date(input.date+'T12:00:00').getTime())||dateISO(new Date(input.date+'T12:00:00'))!==input.date||input.date<today)throw Error('请选择今天或之后的有效出发日期。');
  if(!Number.isInteger(input.days)||input.days<2||input.days>14)throw Error('旅行天数需为 2–14 天，包含往返交通日。');
@@ -54,10 +60,12 @@ export function transport(input,a,b){
  }
  if(cn&&a.name!=='三亚'&&b.name!=='三亚'){
   add('rail','高铁 / 动车','▤',Math.max(45,km*1.3*.42),km*1.3/210+1.5,'二等座模型；可能需换乘，未验证具体线路。');
-  if(km<=900)add('drive','自驾','⌁',km*1.3*.95+40,km*1.3/75+1,'自有车辆油费、通行费估算；不含租车、停车和折旧。',true);
+  if(km<=900&&a.name!=='香港'&&b.name!=='香港')add('drive','自驾','⌁',km*1.3*.95+40,km*1.3/75+1,'自有车辆油费、通行费估算；不含租车、停车和折旧。',true);
  }
- if(same&&a.country==='日本')add('rail','新干线','▤',700,4.5,'普通车厢模型；实际票价、换乘与时刻请向运营方核实。');
- if(!cn||km>350||a.name==='三亚'||b.name==='三亚')add('flight','飞机经济舱','✈',cn?240+km*.38:same?400+km*.5:km<5000?650+km*.38:1500+km*.32,km/750+4,'含机场办理与接驳的粗略时间；可能中转，未验证航线。行李及额外税费以出票为准。');
+ if(same&&a.country==='日本')add('rail',km<100?'城际铁路':'新干线','▤',km<100?40:700,km<100?1.5:4.5,'人工规划参数，非已查到的票价；请向运营方核实车次与换乘。');
+ if(!(same&&a.country==='日本'&&km<100)&&(!cn||km>350||a.name==='三亚'||b.name==='三亚'))add('flight','飞机经济舱','✈',cn?240+km*.38:same?400+km*.5:km<5000?650+km*.38:1500+km*.32,km/750+4,'含机场办理与接驳的粗略时间；可能中转，未验证航线。行李及额外税费以出票为准。');
+ if(a.name==='京都'||b.name==='京都')for(const m of modes)if(m.id==='flight')m.note+=' 京都航空出行需经大阪地区机场转乘，接驳另预留时间与费用。';
+ if(a.name==='香港'||b.name==='香港')for(const m of modes)m.note+=' 涉及香港，请另核实出入境证件、口岸及车票要求。';
  return modes.sort((x,y)=>x.total-y.total);
 }
 export function estimate(input,modeId){

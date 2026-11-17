@@ -981,5 +981,146 @@ export const catalog={
         "imageSearch": "Samgye-tang"
       }
     ]
+  },
+  "香港": {
+    "attractions": [
+      {
+        "id": "hk-stars",
+        "name": "星光大道",
+        "area": "尖沙咀",
+        "description": "沿维多利亚港欣赏天际线，寻找电影明星手印与雕像打卡。",
+        "durationHours": 2,
+        "imageSearch": "Avenue of Stars, Hong Kong",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      }
+    ],
+    "restaurants": [],
+    "coverageNote": "新增目的地基础版：目前提供精选室外景点，付费景区和具体餐厅资料待补充。可通过地图／小红书搜索附近餐厅。"
+  },
+  "京都": {
+    "attractions": [
+      {
+        "id": "kyoto-inari",
+        "name": "伏见稻荷大社",
+        "area": "伏见",
+        "description": "沿朱红色鸟居步道漫步，按体力选择短程参拜路线。",
+        "durationHours": 3,
+        "source": "https://www.japan.travel/en/spot/1128/",
+        "imageSearch": "Fushimi Inari-taisha",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      },
+      {
+        "id": "kyoto-bamboo",
+        "name": "岚山竹林公共步道",
+        "area": "岚山",
+        "description": "在竹林步道感受京都自然景色；周边寺院门票不包含。",
+        "durationHours": 2,
+        "imageSearch": "Arashiyama",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      }
+    ],
+    "restaurants": [],
+    "coverageNote": "新增目的地基础版：目前提供精选室外景点，付费景区和具体餐厅资料待补充。可通过地图／小红书搜索附近餐厅。"
+  },
+  "吉隆坡": {
+    "attractions": [
+      {
+        "id": "kl-park",
+        "name": "KLCC公园与双子塔外观",
+        "area": "KLCC",
+        "description": "公园绿地与城市高楼形成鲜明对比，适合拍摄双子塔外观；不包含登塔。",
+        "durationHours": 2,
+        "imageSearch": "KLCC Park",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      }
+    ],
+    "restaurants": [],
+    "coverageNote": "新增目的地基础版：目前提供精选室外景点，付费景区和具体餐厅资料待补充。可通过地图／小红书搜索附近餐厅。"
+  },
+  "罗马": {
+    "attractions": [
+      {
+        "id": "rome-navona",
+        "name": "纳沃纳广场",
+        "area": "历史中心",
+        "description": "欣赏广场、喷泉和巴洛克建筑外观，适合步行探索。",
+        "durationHours": 1.5,
+        "source": "https://turismoroma.it/en/node/31551",
+        "imageSearch": "Piazza Navona",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      },
+      {
+        "id": "rome-steps",
+        "name": "西班牙台阶",
+        "area": "西班牙广场",
+        "description": "连接广场与山丘的地标台阶，适合建筑摄影；遵守现场通行要求。",
+        "durationHours": 1.5,
+        "source": "https://turismoroma.it/en/places/spanish-steps",
+        "imageSearch": "Spanish Steps",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      }
+    ],
+    "restaurants": [],
+    "coverageNote": "新增目的地基础版：目前提供精选室外景点，付费景区和具体餐厅资料待补充。可通过地图／小红书搜索附近餐厅。"
+  },
+  "纽约": {
+    "attractions": [
+      {
+        "id": "ny-park",
+        "name": "中央公园",
+        "area": "曼哈顿",
+        "description": "选择公园南部步道漫步与休息，收费动物园和体验不含在内。",
+        "durationHours": 3,
+        "imageSearch": "Central Park",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      },
+      {
+        "id": "ny-times",
+        "name": "时代广场",
+        "area": "曼哈顿中城",
+        "description": "欣赏城市灯牌与剧院街区，百老汇演出票需另购。",
+        "durationHours": 1.5,
+        "source": "https://www.timessquarenyc.org/",
+        "imageSearch": "Times Square",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      }
+    ],
+    "restaurants": [],
+    "coverageNote": "新增目的地基础版：目前提供精选室外景点，付费景区和具体餐厅资料待补充。可通过地图／小红书搜索附近餐厅。"
+  },
+  "墨尔本": {
+    "attractions": [
+      {
+        "id": "mel-fed",
+        "name": "联邦广场",
+        "area": "市中心",
+        "description": "欣赏城市公共广场及周边文化建筑，适合步行打卡。",
+        "durationHours": 1.5,
+        "imageSearch": "Federation Square",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      },
+      {
+        "id": "mel-garden",
+        "name": "皇家植物园墨尔本园区",
+        "area": "南岸周边",
+        "description": "在园林步道中慢行，安排一段轻松的户外时间。",
+        "durationHours": 2.5,
+        "source": "https://www.rbg.vic.gov.au/melbourne-gardens",
+        "imageSearch": "Royal Botanic Gardens Victoria",
+        "priceCny": 0,
+        "priceNote": "仅安排公共室外区域，按免费游览规划；不含收费展馆、登塔、演出及商业项目。出发前核实开放安排。"
+      }
+    ],
+    "restaurants": [],
+    "coverageNote": "新增目的地基础版：目前提供精选室外景点，付费景区和具体餐厅资料待补充。可通过地图／小红书搜索附近餐厅。"
   }
 };
