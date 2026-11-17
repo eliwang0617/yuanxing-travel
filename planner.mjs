@@ -1,3 +1,4 @@
+import {makeItinerary} from './itinerary.mjs';
 // All prices below are deliberately transparent planning assumptions in CNY, not live quotes.
 const city = (name,en,country,lat,lon,hotel,food,local,play,arrival,areas,source) => ({name,en,country,lat,lon,hotel,food,local,play,arrival,areas:areas.split('|').map(x=>x.split(' / ')),source});
 export const cities = [
@@ -64,11 +65,12 @@ export function estimate(input,modeId){
  const totalBudget=input.budget*(input.budgetUnit==='person'?input.people:1);
  const nights=input.days-1,rooms=input.roomMode==='single'?input.people:Math.ceil(input.people/2),long=distance(a,b)>7000,international=a.country!==b.country;
  const weekendNights=Array.from({length:nights},(_,i)=>new Date(addDays(input.date,i)+'T12:00:00').getDay()).filter(d=>d===5||d===6).length;
+ const detail=input.selection?makeItinerary(b,input.days,input.date,input.people,input.selection,long):null;
  const costs=tier=>{
   const hotel=input.hotelRate!=null?Math.round(input.hotelRate*rooms*nights):Math.round(b.hotel*(tier==='save'?.72:tier==='comfort'?1.55:1)*rooms*(nights+weekendNights*.15));
-  const food=Math.round(b.food*(tier==='save'?.75:tier==='comfort'?1.35:1)*input.days*input.people);
-  const local=Math.round(b.local*(tier==='comfort'?1.5:1)*input.days*input.people);
-  const play=Math.round(b.play*(tier==='save'?.55:tier==='comfort'?1.4:1)*Math.max(1,input.days-(long?3:2))*input.people);
+  const dailyFood=b.food*(tier==='save'?.75:tier==='comfort'?1.35:1);const food=detail?Math.round(dailyFood/3*(input.days*3-detail.selectedMeals)*input.people+detail.diningTotal):Math.round(dailyFood*input.days*input.people);
+  const local=detail?detail.localTotal:Math.round(b.local*(tier==='comfort'?1.5:1)*input.days*input.people);
+  const play=detail?detail.ticketTotal:Math.round(b.play*(tier==='save'?.55:tier==='comfort'?1.4:1)*Math.max(1,input.days-(long?3:2))*input.people);
   const transport=input.fare!=null?Math.round(input.fare):chosen.total,extra=Math.round(input.extra??0);
   const subtotal=transport+hotel+food+local+play+extra,reserve=Math.ceil(subtotal*.1);
   return {transport,hotel,food,local,play,extra,reserve,total:subtotal+reserve};
@@ -79,7 +81,7 @@ export function estimate(input,modeId){
  // A sensitivity scenario, not a confidence interval or a guaranteed maximum.
  const highBase=(input.fare!=null?c.transport:chosen.high)+(input.hotelRate!=null?c.hotel:Math.ceil(c.hotel*1.25))+Math.ceil((c.food+c.local+c.play)*1.2)+c.extra;
  const cautiousTotal=highBase+Math.ceil(highBase*.1);
- const plan=Array.from({length:input.days},(_,i)=>{
+ let plan=Array.from({length:input.days},(_,i)=>{
   if(i===0)return {day:i+1,date:addDays(input.date,i),title:long?'启程 · 把时间留给路途':'抵达 · 慢慢进入旅行',stops:long?[a.name+'出发','飞行 / 中转','按实际抵达时间休息']:['前往'+b.name,'办理入住',b.arrival],note:long?'跨时区行程仅为日期框架，请按实际航班调整入住日期。':'当天以交通和休息为主；抵达较晚时取消街区散步。',kind:'travel'};
   if(i===input.days-1)return {day:i+1,date:addDays(input.date,i),title:'返程 · 带着回忆回家',stops:['退房','前往车站 / 机场',a.name],note:'此日期为返程出发日；跨时区航班可能次日到家，以实际票面为准。',kind:'travel'};
   if(long&&i===1)return {day:i+1,date:addDays(input.date,i),title:'抵达 · 调整时差',stops:['入住 / 寄存行李',b.arrival,'轻松晚餐'],note:'预留入境、接驳和休息时间，不安排需要定时入场的景点。',kind:'travel'};
@@ -87,8 +89,9 @@ export function estimate(input,modeId){
   if(!area)return {day:i+1,date:addDays(input.date,i),title:'自由探索 · 给旅程留白',stops:['酒店周边早餐','自选街区 / 公园','当地餐厅'],note:'精选片区已安排完毕，这一天留作自由活动、休息或补游；没有自动编造跨城线路。',kind:'flex'};
   return {day:i+1,date:addDays(input.date,i),title:['城市初见','在地生活','人文漫步','另一面风景'][idx],stops:area,note:tier==='save'?'优先街区、公园和外观；付费入场按游玩预算取舍，热门场馆请提前核实预约。':'以同一片区为主，公共交通衔接。开放时间、休馆日和预约名额需出发前核实。',kind:'visit'};
  });
+ if(detail)plan=detail.routes.map(d=>({day:d.day,date:d.date,title:d.title,stops:[...d.attractions.map(a=>a.name),...d.restaurants.map(r=>r.name)],note:'根据自选景点和餐厅安排；开放与交通请在地图核实。',kind:d.attractions.length?'visit':'travel'}));
  return {input,totalBudget,a,b,modes,chosen,c,tier,gap,cautiousTotal,minimum:minimum.total,rooms,nights,weekendNights,long,international,plan};
 }
-const shareFields=['from','to','date','days','people','budget','style','budgetUnit','roomMode','fare','hotelRate','extra'];
+const shareFields=['from','to','date','days','people','budget','style','budgetUnit','roomMode','fare','hotelRate','extra','selection'];
 export function encodeTrip(input,mode){const clean=Object.fromEntries(shareFields.filter(k=>input[k]!=null).map(k=>[k,input[k]]));return '#'+new URLSearchParams({trip:JSON.stringify({v:2,input:clean,mode})}).toString();}
 export function decodeTrip(hash){if(hash.length>6000)throw Error('行程链接过长，请重新生成。');const raw=new URLSearchParams(hash.replace(/^#/,'' )).get('trip');if(!raw)return null;let data;try{data=JSON.parse(raw)}catch{throw Error('行程链接格式不正确。')}if(data?.v!==2||!data.input||typeof data.input!=='object')throw Error('不支持这份行程链接，请重新分享。');const input=Object.fromEntries(shareFields.filter(k=>data.input[k]!=null).map(k=>[k,data.input[k]]));if(!['from','to','date'].every(k=>typeof input[k]==='string'))throw Error('行程链接缺少有效城市或日期。');validate(input,'0000-01-01');return {input,mode:['rail','drive','flight'].includes(data.mode)?data.mode:undefined};}

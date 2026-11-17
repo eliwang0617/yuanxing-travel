@@ -1,17 +1,17 @@
-import {cities,findCity,money,dateISO,addDays,estimate,encodeTrip,decodeTrip} from './planner.mjs?v=3';
+import {cities,findCity,money,dateISO,addDays,estimate,encodeTrip,decodeTrip} from './planner.mjs?v=4';
 const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tierLabel={save:'精打细算',balanced:'均衡安排',comfort:'舒适优先'};
 const categories=[['transport','往返大交通','#2f6552'],['hotel','住宿','#81a78a'],['food','餐饮','#b3bf8a'],['local','当地交通','#d6c99e'],['play','游玩','#d39c74'],['extra','其他费用','#b3a9ba'],['reserve','预留金 10%','#dce2d5']];
 let current=null,toastTimer,selectedMode;
 $('#city-list').innerHTML=cities.map(c=>`<option value="${c.name}">${c.country} · ${c.en}</option>`).join('');
 $('#date').min=dateISO(new Date());$('#date').value=addDays(dateISO(new Date()),14);
-const values=()=>({from:$('#from').value.trim(),to:$('#to').value.trim(),date:$('#date').value,days:Number($('#days').value),people:Number($('#people').value),budget:Number($('#budget').value),style:$('#style').value,budgetUnit:$('#budgetUnit').value,roomMode:$('#roomMode').value,fare:optionalNumber('fare'),hotelRate:optionalNumber('hotelRate'),extra:optionalNumber('extra')});
+const values=()=>({from:$('#from').value.trim(),to:$('#to').value.trim(),date:$('#date').value,days:Number($('#days').value),people:Number($('#people').value),budget:Number($('#budget').value),style:$('#style').value,budgetUnit:$('#budgetUnit').value,roomMode:$('#roomMode').value,fare:optionalNumber('fare'),hotelRate:optionalNumber('hotelRate'),extra:optionalNumber('extra'),selection:window.yuanxingSelection?.().city===$('#to').value?window.yuanxingSelection():undefined});
 function optionalNumber(id){const value=document.getElementById(id).value;return value===''?null:Number(value)}
 function budgetHint(){const p=Number($('#people').value),b=Number($('#budget').value),total=b*($('#budgetUnit').value==='person'?p:1);$('#budget-hint').textContent=Number.isFinite(total)?`全体 ${p} 人合计 ${money(total)} · 人均 ${money(total/p)}`:''}
 budgetHint();
 function toast(s){$('#toast').textContent=s;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),3200)}
-function populate(input){input={budgetUnit:'total',roomMode:'twin',fare:'',hotelRate:'',extra:'',...input};for(const [key,v]of Object.entries(input)){const el=document.getElementById(key);if(el)el.value=v??'';}budgetHint();}
-function generate(input,modeId,scroll=true){try{current=estimate(input,modeId);selectedMode=current.chosen.id;$('#form-error').hidden=true;render();renderDestinationRoute(current.b,current.input.days,current.input.date);if(scroll)$('#route-results').scrollIntoView({behavior:'smooth',block:'start'});return true}catch(e){$('#form-error').textContent=e.message;$('#form-error').hidden=false;$('#form-error').scrollIntoView({behavior:'smooth',block:'center'});return false}}
+function populate(input){input={budgetUnit:'total',roomMode:'twin',fare:'',hotelRate:'',extra:'',...input};for(const [key,v]of Object.entries(input)){const el=document.getElementById(key);if(el)el.value=v??'';}budgetHint();window.dispatchEvent(new CustomEvent("restore-selection",{detail:input}));}
+function generate(input,modeId,scroll=true){try{current=estimate(input,modeId);selectedMode=current.chosen.id;$('#form-error').hidden=true;render();if(current.input.selection&&window.yuanxingBuildSelected){window.yuanxingBuildSelected(current.input.selection,current.long,false);}else renderDestinationRoute(current.b,current.input.days,current.input.date);if(scroll)$('#route-results').scrollIntoView({behavior:'smooth',block:'start'});return true}catch(e){$('#form-error').textContent=e.message;$('#form-error').hidden=false;$('#form-error').scrollIntoView({behavior:'smooth',block:'center'});return false}}
 $('#trip-form').addEventListener('submit',e=>{e.preventDefault();generate(values(),selectedMode)});
 $('#swap').addEventListener('click',()=>{const from=$('#from').value;$('#from').value=$('#to').value;$('#to').value=from;$('#from').focus()});
 $('#trip-form').addEventListener('input',e=>{if(['from','to','date','days','people'].includes(e.target.id)){selectedMode=undefined;$('#fare').value='';}if(e.target.id==='to')$('#hotelRate').value='';if(current){$('#results').hidden=true;current=null;}$('#form-error').hidden=true;budgetHint();});
@@ -56,6 +56,7 @@ function renderDestinationRoute(city,days,date){
  target.hidden=false;
 }
 $('#generate-route').addEventListener('click',()=>{
+ if(window.yuanxingBuildSelected){window.yuanxingBuildSelected();return;}
  const city=findCity($('#to').value),days=Number($('#days').value);
  if(!city){$('#form-error').textContent='请选择支持的目的地：'+cities.map(c=>c.name).join('、');$('#form-error').hidden=false;$('#to').focus();return;}
  if(!Number.isInteger(days)||days<2||days>14)return;
